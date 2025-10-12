@@ -16,4 +16,7 @@ router.get('/holidays', publicController.getHolidays);
 // Search
 router.get('/search/resources', publicController.searchResources);
 
+// NEW ROUTE: Get ALL subjects (for Admin Dashboard dropdowns)
+router.get('/subjects', publicController.getAllSubjects); 
+
 module.exports = router;

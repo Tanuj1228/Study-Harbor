@@ -4,17 +4,29 @@ import { motion } from 'framer-motion';
 import api from '../utils/api';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Sun } from 'lucide-react';
 
+// Helper function to create a standardized YYYY-MM-DD date key (Correct)
+const getISODateKey = (date) => {
+    if (!date || isNaN(date.getTime())) return null;
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+};
+
 const Calendar = () => {
+    // ... (State declarations are correct)
     const [holidays, setHolidays] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentDate, setCurrentDate] = useState(new Date());
 
     useEffect(() => {
+        // ... (fetchHolidays logic is correct)
         const fetchHolidays = async () => {
             try {
-                // Fetch all holidays (the public controller returns future holidays sorted by date)
                 const res = await api.get('/holidays');
-                setHolidays(res.data);
+                setHolidays(res.data); 
             } catch (err) {
                 console.error("Failed to fetch holidays:", err);
             } finally {
@@ -26,12 +38,13 @@ const Calendar = () => {
 
     // Calendar logic helpers
     const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-    const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay(); // 0 (Sun) - 6 (Sat)
+    const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
     
-    // Convert holidays array to a map for O(1) lookup
+    // Convert holidays array to a map using the simple date string key (YYYY-MM-DD)
     const holidayMap = holidays.reduce((acc, hol) => {
-        const dateKey = new Date(hol.date).toDateString();
-        acc[dateKey] = hol;
+        if (typeof hol.date === 'string' && hol.date.length === 10) {
+             acc[hol.date] = hol;
+        }
         return acc;
     }, {});
 
@@ -49,20 +62,37 @@ const Calendar = () => {
         // Fill days of the month
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), day);
-            const isHoliday = holidayMap[date.toDateString()];
+            const dateKey = getISODateKey(date);
+            const isHoliday = holidayMap[dateKey];
             
             calendarDays.push(
                 <div 
                     key={day} 
-                    className={`p-2 h-24 border border-gray-200 flex flex-col justify-between transition-shadow relative ${
-                        isHoliday ? 'bg-red-50 text-red-800 font-bold shadow-lg hover:shadow-xl' : 'bg-white hover:bg-gray-50'
-                    }`}
+                    // FIX: Ensure z-index is set if holiday overlay is absolute.
+                    className={`
+                        p-2 h-24 border border-gray-200 flex flex-col justify-between transition-shadow relative group overflow-hidden 
+                        ${isHoliday 
+                            ? 'bg-red-50 text-red-800 font-bold shadow-lg hover:shadow-xl' // Added text-red-800 for visibility
+                            : 'bg-white hover:bg-gray-50'
+                        }
+                    `}
                 >
-                    <span className={`text-xl font-medium ${isHoliday ? 'text-red-600' : 'text-gray-800'}`}>{day}</span>
+                    {/* The date number itself (Needs to be relatively positioned or z-indexed if using absolute overlay) */}
+                    <span 
+                        className={`text-xl font-medium relative z-10 ${isHoliday ? 'text-red-700' : 'text-gray-800'}`}
+                    >
+                        {day}
+                    </span>
+                    
+                    {/* Holiday Title and Overlay */}
                     {isHoliday && (
-                        <div className="absolute inset-0 bg-red-200/50 p-2 pt-8 overflow-hidden">
-                            <p className="text-xs font-semibold">{isHoliday.title}</p>
-                            <Sun className="w-5 h-5 absolute bottom-1 right-1 opacity-70" />
+                        <div 
+                            className="absolute inset-0 bg-red-200/70 p-2 flex flex-col justify-end items-center opacity-100 transition-opacity"
+                        >
+                            <p className="text-sm font-semibold text-red-800 text-center leading-tight">
+                                {isHoliday.title}
+                            </p>
+                            <Sun className="w-5 h-5 text-red-400 mt-1" />
                         </div>
                     )}
                 </div>

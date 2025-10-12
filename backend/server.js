@@ -4,7 +4,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
-
+// backend/server.js
+require('dotenv').config({ path: '../.env' }); // <-- MUST BE THIS LINE
+// ...
 // Middleware
 app.use(cors());
 app.use(express.json());

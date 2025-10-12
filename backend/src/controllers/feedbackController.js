@@ -1,5 +1,4 @@
-
-const Feedback = require('../models/Feedback'); // Assuming you created this model
+const Feedback = require('../models/Feedback'); 
 const nodemailer = require('nodemailer');
 
 // Initialize Nodemailer transporter
@@ -12,12 +11,32 @@ const transporter = nodemailer.createTransport({
 });
 
 // Helper functions for sending emails
-async function sendFeedbackAutoReply(userEmail, userName) {
+
+// UPDATED: Now accepts the message to include in the reply
+async function sendFeedbackAutoReply(userEmail, userName, message) { 
+    // Template for the confirmation email
+    const emailText = `
+Hi ${userName || 'User'},
+
+Thank you for reaching out to the Study Harbor team! We've successfully received your feedback.
+We will review your input and respond to you as soon as possible.
+
+---
+Your Submitted Feedback:
+"${message}"
+---
+
+If you have any urgent concerns, please reply to this email.
+
+Thanks,
+The Notes Portal Team
+`;
+    
     await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: userEmail,
-        subject: '🚀 Thanks for your Notes Portal feedback!',
-        text: `Hi ${userName || 'User'},\n\nThanks for your feedback. We've received your message and will respond as soon as possible.\n\n— The Notes Portal Team`
+        subject: '✅ Confirmation: Thanks for your Notes Portal feedback!',
+        text: emailText // Using the enhanced template
     });
 }
 
@@ -32,7 +51,8 @@ async function sendAdminNotification(feedback) {
 
 // --- Feedback Submission Endpoint ---
 exports.submitFeedback = async (req, res) => {
-    const { userEmail, message, userName } = req.body;
+    // Destructure message here
+    const { userEmail, message, userName } = req.body; 
 
     if (!userEmail || !message) {
         return res.status(400).json({ msg: 'Email and message are required.' });
@@ -44,7 +64,8 @@ exports.submitFeedback = async (req, res) => {
         await feedback.save();
 
         // 2. Trigger email notifications (Non-blocking)
-        sendFeedbackAutoReply(userEmail, userName).catch(console.error);
+        // UPDATED: Pass the message to the auto-reply function
+        sendFeedbackAutoReply(userEmail, userName, message).catch(console.error); 
         sendAdminNotification(feedback).catch(console.error);
 
         res.status(201).json({ msg: 'Feedback submitted. Check your email for an auto-reply!' });

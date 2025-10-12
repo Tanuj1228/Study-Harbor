@@ -3,7 +3,15 @@ const Subject = require('../models/Subject');
 const Resource = require('../models/Resource');
 const Announcement = require('../models/Announcement');
 const Holiday = require('../models/Holiday');
-
+// --- NEW FUNCTION: Fetch all subjects for the admin dashboard dropdowns ---
+exports.getAllSubjects = async (req, res) => {
+    try {
+        const subjects = await Subject.find().sort({ title: 1 });
+        res.json(subjects);
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error fetching all subjects.' });
+    }
+};
 // --- PUBLIC API ENDPOINTS ---
 
 // 1. Core Structure
@@ -44,20 +52,37 @@ exports.getResourcesBySubject = async (req, res) => {
 
 // 2. Announcements
 exports.getAnnouncements = async (req, res) => {
+    // 1. Get today's date in YYYY-MM-DD format for reliable string comparison
+    const today = new Date().toISOString().split('T')[0];
+    
+    // 2. Define the filter to exclude expired announcements
+    const filter = {
+        $or: [
+            // Condition 1: Include announcements that DON'T have a specific event date (e.g., General Notices).
+            { dateOfEvent: { $exists: false } }, 
+            { dateOfEvent: { $eq: '' } }, 
+            
+            // Condition 2: Include announcements where the dateOfEvent is today or in the future.
+            { dateOfEvent: { $gte: today } } 
+        ]
+    };
+
     try {
-        // Show pinned first, then chronological
-        const announcements = await Announcement.find().sort({ pinned: -1, createdAt: -1 });
+        // Use the filter in the find query
+        const announcements = await Announcement.find(filter).sort({ pinned: -1, createdAt: -1 }); 
         res.json(announcements);
     } catch (err) {
+        console.error("Error fetching announcements:", err);
         res.status(500).json({ msg: 'Server error fetching announcements.' });
     }
 };
 
 // 3. Holidays
 exports.getHolidays = async (req, res) => {
-    // Allows filtering by month or year if needed, but for MVP, return all future holidays
+    // Now returns ALL holidays (past and future)
     try {
-        const holidays = await Holiday.find({ date: { $gte: new Date() } }).sort({ date: 1 });
+        // Removed the filter: { date: { $gte: new Date() } }
+        const holidays = await Holiday.find().sort({ date: -1 }); // Sort by date descending (latest first)
         res.json(holidays);
     } catch (err) {
         res.status(500).json({ msg: 'Server error fetching holidays.' });
