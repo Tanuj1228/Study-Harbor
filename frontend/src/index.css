@@ -1,0 +1,10 @@
+/* frontend/src/index.css */
+
+/* Inject Tailwind's base styles, components, and utilities */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* * Optional: You can add custom global styles here, 
+ * but for simplicity, we rely on Tailwind utility classes.
+ */
