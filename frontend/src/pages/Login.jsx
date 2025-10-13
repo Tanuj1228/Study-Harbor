@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
+// NEW IMPORTS
+import { GoogleLogin } from '@react-oauth/google'; 
+import api from '../utils/api'; 
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -31,6 +34,35 @@ const Login = () => {
     }
   };
 
+  // --- NEW: Google Login Handler ---
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError('');
+    
+    // 1. Send the credential token (ID Token) to the backend for verification
+    try {
+        const res = await api.post('/auth/google', { token: credentialResponse.credential });
+
+        // 2. Extract the app token and user data returned by your backend
+        const { token: appToken, user: userData } = res.data;
+        
+        // 3. Store the new app session data
+        localStorage.setItem('token', appToken);
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        // 4. Update the context and navigate
+        // For simplicity and immediate effect, we'll navigate directly after setting local storage:
+        window.location.href = userData.role === 'admin' ? '/admin/dashboard' : '/';
+        
+    } catch (err) {
+        setError(err.response?.data?.msg || 'Google Sign-In failed on server verification. Try manual login.');
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google Sign-In failed. Please try again.');
+  };
+
+
   return (
     <motion.div
       className="max-w-md mx-auto my-12 p-8 bg-white rounded-xl shadow-2xl border border-gray-100"
@@ -39,8 +71,20 @@ const Login = () => {
       transition={{ duration: 0.5 }}
     >
       <h2 className="text-3xl font-bold text-center text-indigo-700 mb-6">Student Login</h2>
-      <p className="text-center text-gray-500 mb-8">Access all course materials and announcements.</p>
+      
+      {/* NEW: GOOGLE LOGIN BUTTON */}
+      <div className="flex justify-center mb-6">
+        <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            theme="filled_blue"
+            size="large"
+            text="signin_with"
+        />
+      </div>
+      <div className="text-center text-gray-500 mb-8">OR</div>
 
+      {/* MANUAL LOGIN FORM */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">Email Address</label>

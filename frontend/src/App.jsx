@@ -3,6 +3,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute'; 
+import { GoogleOAuthProvider } from '@react-oauth/google'; 
 
 // Import ALL Pages and Components (Ensure these files exist in the correct paths!)
 import Layout from './components/Layout';
@@ -20,44 +21,51 @@ import Contact from './pages/Contact';
 import Search from './pages/Search';
 
 
+// CRITICAL: Replace with your actual Client ID (from your .env)
+const GOOGLE_CLIENT_ID = "517507749773-540meojf7po9dii7h9d853ns2bh19nhh.apps.googleusercontent.com"; 
+
+
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <Layout>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/announcements" element={<Announcements />} />
-            <Route path="/feedback" element={<Feedback />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/search" element={<Search />} />
+      {/* WRAPPER: Entire app needs to be inside the GoogleOAuthProvider */}
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}> 
+        <AuthProvider>
+          <Layout>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/announcements" element={<Announcements />} />
+              <Route path="/feedback" element={<Feedback />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/search" element={<Search />} />
 
-            {/* Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+              {/* Auth Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
-            {/* Core Content Routes */}
-            <Route path="/year/:yearId" element={<YearPage />} />
-            <Route path="/subject/:subjectId" element={<SubjectPage />} />
+              {/* Core Content Routes */}
+              <Route path="/year/:yearId" element={<YearPage />} />
+              <Route path="/subject/:subjectId" element={<SubjectPage />} />
 
-            {/* Admin Routes (PROTECTED) */}
-            <Route 
-              path="/admin/dashboard" 
-              element={
-                <ProtectedRoute adminOnly={true}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } 
-            />
+              {/* Admin Routes (PROTECTED) */}
+              <Route 
+                path="/admin/dashboard" 
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
 
-            {/* 404 */}
-            <Route path="*" element={<h1>404: Not Found</h1>} />
-          </Routes>
-        </Layout>
-      </AuthProvider>
+              {/* 404 */}
+              <Route path="*" element={<h1>404: Not Found</h1>} />
+            </Routes>
+          </Layout>
+        </AuthProvider>
+      </GoogleOAuthProvider> {/* <-- END WRAPPER */}
     </Router>
   );
 }

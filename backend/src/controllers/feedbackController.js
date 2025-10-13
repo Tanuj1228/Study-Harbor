@@ -1,18 +1,23 @@
+// backend/src/controllers/feedbackController.js
+
 const Feedback = require('../models/Feedback'); 
 const nodemailer = require('nodemailer');
 
-// Initialize Nodemailer transporter
+// UPDATED: Initialize Nodemailer transporter with SendGrid SMTP settings
 const transporter = nodemailer.createTransport({
-    service: 'gmail', // Use 'gmail' or 'smtp' for production
+    // Use SendGrid's standard SMTP settings
+    host: 'smtp.sendgrid.net', 
+    port: 587, 
+    secure: false, // Use STARTTLS
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        // SendGrid requires the username 'apikey'
+        user: 'apikey', 
+        // We use the environment variable for the API key
+        pass: process.env.SENDGRID_API_KEY 
     }
 });
 
 // Helper functions for sending emails
-
-// UPDATED: Now accepts the message to include in the reply
 async function sendFeedbackAutoReply(userEmail, userName, message) { 
     // Template for the confirmation email
     const emailText = `
@@ -33,17 +38,18 @@ The Notes Portal Team
 `;
     
     await transporter.sendMail({
-        from: process.env.EMAIL_USER,
+        // Sender email must be verified on SendGrid
+        from: process.env.EMAIL_FROM_ADDRESS, 
         to: userEmail,
         subject: '✅ Confirmation: Thanks for your Notes Portal feedback!',
-        text: emailText // Using the enhanced template
+        text: emailText 
     });
 }
 
 async function sendAdminNotification(feedback) {
     await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: process.env.ADMIN_EMAILS, // Comma-separated list from .env
+        from: process.env.EMAIL_FROM_ADDRESS, 
+        to: process.env.ADMIN_EMAILS, 
         subject: `🚨 NEW FEEDBACK from ${feedback.userEmail}`,
         text: `Message:\n${feedback.message}\n\nView and manage in the Admin Panel.`
     });
@@ -64,14 +70,14 @@ exports.submitFeedback = async (req, res) => {
         await feedback.save();
 
         // 2. Trigger email notifications (Non-blocking)
-        // UPDATED: Pass the message to the auto-reply function
         sendFeedbackAutoReply(userEmail, userName, message).catch(console.error); 
         sendAdminNotification(feedback).catch(console.error);
 
         res.status(201).json({ msg: 'Feedback submitted. Check your email for an auto-reply!' });
 
     } catch (err) {
-        console.error('Feedback error:', err.message);
+        // Log the error to your console for troubleshooting
+        console.error('Feedback submission failed with 500 error:', err.message); 
         res.status(500).send('Server error submitting feedback.');
     }
 };
