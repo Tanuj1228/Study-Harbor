@@ -7,6 +7,10 @@ const publicController = require('../controllers/publicController');
 // Core Structure
 router.get('/years', publicController.getYears);
 router.get('/years/:yearId/subjects', publicController.getSubjectsByYear);
+
+// NEW ROUTE: Get single subject details by ID (Needed for SubjectPage title)
+router.get('/subjects/:subjectId', publicController.getSubjectById); 
+
 router.get('/subjects/:subjectId/resources', publicController.getResourcesBySubject);
 
 // Information
@@ -16,7 +20,7 @@ router.get('/holidays', publicController.getHolidays);
 // Search
 router.get('/search/resources', publicController.searchResources);
 
-// NEW ROUTE: Get ALL subjects (for Admin Dashboard dropdowns)
+// Route for Admin Dashboard dropdowns
 router.get('/subjects', publicController.getAllSubjects); 
 
 module.exports = router;

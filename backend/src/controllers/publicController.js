@@ -3,6 +3,20 @@ const Subject = require('../models/Subject');
 const Resource = require('../models/Resource');
 const Announcement = require('../models/Announcement');
 const Holiday = require('../models/Holiday');
+
+// --- NEW FUNCTION: Get single subject details ---
+exports.getSubjectById = async (req, res) => {
+    try {
+        const subject = await Subject.findById(req.params.subjectId).select('title description');
+        if (!subject) {
+            return res.status(404).json({ msg: 'Subject not found.' });
+        }
+        res.json(subject);
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error fetching subject details.' });
+    }
+};
+
 // --- NEW FUNCTION: Fetch all subjects for the admin dashboard dropdowns ---
 exports.getAllSubjects = async (req, res) => {
     try {

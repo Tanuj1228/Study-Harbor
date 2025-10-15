@@ -3,14 +3,30 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, FileText } from 'lucide-react';
 
+// Helper function to convert a standard share link to a reliable embed/preview URL
+const getEmbedUrl = (shareLink) => {
+  // Check for the standard Google Drive 'file/d/FILE_ID/view' format
+  const match = shareLink.match(/\/d\/([a-zA-Z0-9_-]+)/);
+
+  if (match && match[1]) {
+    const fileId = match[1];
+    // Return the specific URL format required for embedding within an iframe
+    return `https://drive.google.com/file/d/${fileId}/preview`;
+  }
+  
+  // Fallback for direct Google Docs/Sheets links or other formats
+  return shareLink;
+};
+
+
 const PDFPreviewModal = ({ resource, onClose }) => {
   if (!resource) return null;
 
-  // The link to the Google Drive file must be in the format for embedding/preview.
-  // We use the basic link, as Google Drive handles embedding often by converting /view to /preview
-  // or using the standard share link in an iframe.
-  const previewUrl = resource.driveWebViewLink; 
-  const downloadUrl = resource.driveWebViewLink; // Use the same link for download
+  // The download link should be the original shared link (for direct access/download)
+  const downloadUrl = resource.driveWebViewLink;
+  
+  // CRITICAL FIX: Convert the shared link to the embed/preview link
+  const previewUrl = getEmbedUrl(resource.driveWebViewLink); 
 
   return (
     <AnimatePresence>
@@ -32,8 +48,8 @@ const PDFPreviewModal = ({ resource, onClose }) => {
           {/* Header */}
           <div className="flex justify-between items-center p-4 border-b bg-indigo-500 text-white">
             <h3 className="text-xl font-bold flex items-center space-x-2">
-                <FileText className="w-6 h-6" />
-                <span>Review: {resource.title}</span>
+              <FileText className="w-6 h-6" />
+              <span>Review: {resource.title}</span>
             </h3>
             <button onClick={onClose} className="text-white hover:text-gray-200 transition-colors">
               <X className="w-6 h-6" />
@@ -43,12 +59,14 @@ const PDFPreviewModal = ({ resource, onClose }) => {
           {/* Preview Area (Iframe) */}
           <div className="flex-grow bg-gray-100 p-2">
             <iframe
+              // Use the corrected previewUrl for the iframe source
               src={previewUrl} 
               title={resource.title}
               width="100%"
               height="100%"
               style={{ border: 'none' }}
-              allow="clipboard-write"
+              // Allow fullscreen and web access
+              allow="clipboard-write; fullscreen"
             >
               Your browser does not support iframes, please use the download button.
             </iframe>
@@ -57,6 +75,7 @@ const PDFPreviewModal = ({ resource, onClose }) => {
           {/* Footer / Download Button */}
           <div className="p-4 border-t bg-gray-50 flex justify-end">
             <motion.a
+              // Use the original downloadUrl for the download button
               href={downloadUrl}
               target="_blank"
               rel="noopener noreferrer"
