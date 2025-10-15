@@ -1,24 +1,46 @@
 // frontend/src/pages/Announcements.jsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+// CRITICAL: Import useNavigate for click navigation
+import { useNavigate } from 'react-router-dom'; 
 import api from '../utils/api';
 // Using FileText for Exams and EventIcon for Events/General
 import { Bell, Pin, FileText, Calendar as EventIcon } from 'lucide-react'; 
 
+// CRITICAL: AnnouncementCard must accept navigate and use it
 const AnnouncementCard = ({ announcement, delay }) => {
-    const isExam = announcement.type === 'exam';
+    // Access navigation logic
+    const navigate = useNavigate();
+    
+    const isEvent = announcement.type === 'event';
     const isPinned = announcement.pinned;
     
     // Determine card styling based on type and pinned status
-    const borderColor = isExam ? 'border-red-500' : isPinned ? 'border-pink-500' : 'border-indigo-400';
-    // cardIcon is not used in the render function, but FileText and EventIcon are passed to renderSection
+    const borderColor = isEvent ? 'border-indigo-500' : isPinned ? 'border-red-500' : 'border-gray-300';
+    
+    // Determine cursor and click behavior
+    const isClickable = isEvent; // Only Events are detailed pages, Exams/General can just show content
+
+    // Handle click to navigate to the detail page
+    const handleClick = () => {
+        // If it's an event, go to the detail page (e.g., /announcements/123)
+        if (isClickable) {
+            navigate(`/announcements/${announcement._id}`);
+        }
+    };
+
 
     return (
         <motion.div
+            onClick={handleClick} // Add the click handler
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay }}
-            className={`p-6 bg-white rounded-xl shadow-lg border-l-4 ${borderColor}`}
+            // Add hover/cursor styling for clickable events
+            className={`p-6 bg-white rounded-xl shadow-lg border-l-4 
+                        ${borderColor} 
+                        ${isClickable ? 'cursor-pointer hover:shadow-xl' : ''}`
+            }
         >
             <div className="flex justify-between items-start mb-2">
                 <h3 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
@@ -31,9 +53,13 @@ const AnnouncementCard = ({ announcement, delay }) => {
                     </div>
                 )}
             </div>
-            <p className="text-gray-700 mb-4 whitespace-pre-wrap">{announcement.content}</p>
             
-            {/* UPDATED: Display Date of Event/Exam */}
+            {/* Display only a snippet of the content on the list page */}
+            <p className="text-gray-700 mb-4 line-clamp-2">
+                {announcement.content}
+            </p>
+            
+            {/* Bottom details */}
             <p className="text-xs text-gray-500 flex justify-between">
                 <span>
                     Category: <span className="font-medium text-gray-700 capitalize">{announcement.type}</span>
@@ -47,7 +73,6 @@ const AnnouncementCard = ({ announcement, delay }) => {
                 </span>
                 <span>Posted: {new Date(announcement.createdAt).toLocaleDateString()}</span>
             </p>
-            {/* END UPDATED SECTION */}
         </motion.div>
     );
 };
@@ -60,7 +85,6 @@ const Announcements = () => {
         const fetchAnnouncements = async () => {
             try {
                 const res = await api.get('/announcements');
-                // The backend controller should already sort by pinned status first, then by date
                 setAllAnnouncements(res.data);
             } catch (err) {
                 console.error("Failed to fetch announcements:", err);
@@ -89,6 +113,7 @@ const Announcements = () => {
             ) : (
                 <div className="space-y-6">
                     {list.map((ann, index) => (
+                        // Pass the card component
                         <AnnouncementCard key={ann._id} announcement={ann} delay={index * 0.05} />
                     ))}
                 </div>
@@ -111,6 +136,7 @@ const Announcements = () => {
 
             {!loading && allAnnouncements.length > 0 && (
                 <>
+                    {/* Only Event announcements should be clickable to see details. Exams/General show content here. */}
                     {renderSection('Exam & Academic Announcements', FileText, examAnnouncements, 'No current exam schedules or academic alerts.')}
                     {renderSection('Event & Extracurricular Notices', EventIcon, eventAnnouncements, 'No upcoming event announcements.')}
                     {/* General notices display only if there are any */}

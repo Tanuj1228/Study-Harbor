@@ -19,6 +19,8 @@ import Feedback from './pages/Feedback';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Search from './pages/Search';
+// NEW IMPORT for Announcement Detail Page
+import AnnouncementDetail from './pages/AnnouncementDetail';
 
 
 // CRITICAL: Replace with your actual Client ID (from your .env)
@@ -37,6 +39,8 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/announcements" element={<Announcements />} />
+              {/* NEW ROUTE: Announcement Detail Page */}
+              <Route path="/announcements/:id" element={<AnnouncementDetail />} /> 
               <Route path="/feedback" element={<Feedback />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />

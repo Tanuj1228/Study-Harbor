@@ -4,6 +4,19 @@ const Resource = require('../models/Resource');
 const Announcement = require('../models/Announcement');
 const Holiday = require('../models/Holiday');
 
+// --- NEW FUNCTION: Get single announcement details ---
+exports.getAnnouncementById = async (req, res) => {
+    try {
+        const announcement = await Announcement.findById(req.params.id);
+        if (!announcement) {
+            return res.status(404).json({ msg: 'Announcement not found.' });
+        }
+        res.json(announcement);
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error fetching announcement details.' });
+    }
+};
+
 // --- NEW FUNCTION: Get single subject details ---
 exports.getSubjectById = async (req, res) => {
     try {

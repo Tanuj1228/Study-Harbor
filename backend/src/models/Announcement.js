@@ -8,6 +8,8 @@ const AnnouncementSchema = new mongoose.Schema({
   // ADDED: Optional field for the event/exam date
   dateOfEvent: { type: String }, 
   pinned: { type: Boolean, default: false },
+  // ADDED: Field for the registration/sign-up link (specific to 'event' type)
+  registrationLink: { type: String }, 
   createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   createdAt: { type: Date, default: Date.now }
 });

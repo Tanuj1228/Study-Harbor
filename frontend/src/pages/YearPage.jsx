@@ -13,11 +13,13 @@ const SubjectCard = ({ subject }) => {
       initial={{ scale: 1 }}
       whileHover={{ scale: 1.05, boxShadow: "0 10px 15px rgba(0, 0, 0, 0.1)" }}
       whileTap={{ scale: 0.98 }}
-      className="p-6 bg-white rounded-xl shadow-lg cursor-pointer transition-all border-t-4 border-indigo-500"
+      // FIX 1: Added h-full and flex flex-col to make the card itself stretch
+      className="p-6 bg-white rounded-xl shadow-lg cursor-pointer transition-all border-t-4 border-indigo-500 h-full flex flex-col"
     >
       <h3 className="text-xl font-bold text-indigo-700 mb-2">{subject.title}</h3>
       <p className="text-sm text-gray-500 font-mono mb-3">{subject.code}</p>
-      <p className="text-gray-600 line-clamp-2">{subject.description || 'No description available.'}</p>
+      {/* FIX 2: Added flex-grow to make the description area fill remaining space, ensuring cards push to the same height */}
+      <p className="text-gray-600 line-clamp-2 flex-grow">{subject.description || 'No description available.'}</p>
     </motion.div>
   );
 };
@@ -37,19 +39,13 @@ const YearPage = () => {
         const res = await api.get(`/years/${yearId}/subjects`);
         setSubjects(res.data);
         
-        // Infer the year name (or fetch it if needed, but for simplicity we assume yearId is meaningful)
-        if (res.data.length > 0) {
-            // We'll rely on a separate endpoint or better data design later,
-            // but for now, if the list is empty, we set a default name.
-        }
-        
         // Quick way to get a meaningful name: assume yearId is the object ID of the Year model
         const yearRes = await api.get('/years'); 
         const year = yearRes.data.find(y => y._id === yearId);
         if (year) {
-            setYearName(year.displayName);
+          setYearName(year.displayName);
         } else {
-             setYearName(`Year Content`);
+          setYearName(`Year Content`);
         }
 
       } catch (err) {
@@ -82,6 +78,7 @@ const YearPage = () => {
         </p>
       )}
 
+      {/* Grid container handles responsive columns */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {subjects.map((subject, index) => (
           <motion.div
@@ -89,6 +86,8 @@ const YearPage = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
+            // FIX 3: Added h-full to the map wrapper
+            className="h-full"
           >
             <SubjectCard subject={subject} />
           </motion.div>

@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import api from '../../utils/api';
-// ADD Bell icon for Announcements tab
 import { BookOpen, Calendar, Plus, FileText, Users, Bell } from 'lucide-react'; 
 
 const AdminDashboard = () => {
@@ -12,31 +11,30 @@ const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('resources');
     
     // Form States
-    const [resourceForm, setResourceForm] = useState({ subjectId: '', title: '', type: 'note', driveWebViewLink: '', tags: '' });
+    // UPDATED resourceForm reset logic (minor cleanup)
+    const [resourceForm, setResourceForm] = useState({ subjectId: '', title: '', type: 'note', driveWebViewLink: '', tags: '', description: '' }); 
+    
     const [subjectForm, setSubjectForm] = useState({ yearId: '', code: '', title: '', description: '' });
     const [holidayForm, setHolidayForm] = useState({ date: '', title: '' });
     
-    // UPDATED: Announcement Form State includes dateOfEvent
+    // CRITICAL UPDATE: Announcement Form State includes dateOfEvent AND registrationLink
     const [announcementForm, setAnnouncementForm] = useState({ 
         title: '', 
         content: '', 
         type: 'exam', 
         pinned: false,
-        dateOfEvent: '' // <-- NEW FIELD
+        dateOfEvent: '',
+        registrationLink: '' // <-- NEW FIELD ADDED
     }); 
 
 
     useEffect(() => {
-        // Fetch years and subjects to populate form selects
         const fetchData = async () => {
             try {
-                // 1. Fetch Years and ALL Subjects simultaneously 
                 const [yearsRes, subjectsRes] = await Promise.all([
                     api.get('/years'),
                     api.get('/subjects') 
                 ]);
-                
-                // 2. Set state directly
                 setYears(yearsRes.data);
                 setSubjects(subjectsRes.data);
                 
@@ -47,7 +45,7 @@ const AdminDashboard = () => {
             }
         };
         fetchData();
-    }, []); // Run only once on mount
+    }, []); 
 
     const showStatus = (type, message) => {
         setStatus({ type, message });
@@ -66,24 +64,24 @@ const AdminDashboard = () => {
     const handleAnnouncementSubmit = async (e) => {
         e.preventDefault();
         try {
-            // The post data now includes the dateOfEvent field
+            // The post data includes dateOfEvent and registrationLink
             await api.post('/admin/announcements', announcementForm);
             showStatus('success', `Announcement "${announcementForm.title}" added successfully!`);
-            // Reset form state, including the new field
-            setAnnouncementForm({ title: '', content: '', type: 'exam', pinned: false, dateOfEvent: '' }); 
+            // Reset form state with all fields
+            setAnnouncementForm({ title: '', content: '', type: 'exam', pinned: false, dateOfEvent: '', registrationLink: '' }); 
         } catch (err) {
             showStatus('error', err.response?.data?.msg || 'Failed to add announcement. Check inputs.');
         }
     };
 
 
-    // --- Other Handlers (Existing, kept for completeness) ---
+    // --- Resource Handler (Reset logic fixed) ---
     const handleResourceSubmit = async (e) => {
         e.preventDefault();
         try {
             await api.post('/admin/resources', resourceForm);
             showStatus('success', `Resource "${resourceForm.title}" added successfully!`);
-            setResourceForm({ subjectId: '', title: '', type: 'note', driveWebViewLink: '', tags: '' });
+            setResourceForm({ subjectId: '', title: '', type: 'note', driveWebViewLink: '', tags: '', description: '' }); 
         } catch (err) {
             showStatus('error', err.response?.data?.msg || 'Failed to add resource. Check inputs.');
         }
@@ -124,7 +122,7 @@ const AdminDashboard = () => {
                     <h4 className="text-xl font-semibold mb-3">Create New Announcement 📢</h4>
                     
                     {/* Title */}
-                    <input type="text" required placeholder="Announcement Title (e.g., Midterm Schedule Released)" name="title" value={announcementForm.title} onChange={(e) => handleChange(e, announcementForm, setAnnouncementForm)} className="w-full p-3 border rounded-lg" />
+                    <input type="text" required placeholder="Announcement Title" name="title" value={announcementForm.title} onChange={(e) => handleChange(e, announcementForm, setAnnouncementForm)} className="w-full p-3 border rounded-lg" />
                     
                     {/* Type Selector */}
                     <select
@@ -139,7 +137,7 @@ const AdminDashboard = () => {
                         <option value="general">General Information</option>
                     </select>
                     
-                    {/* NEW: Date of Event/Exam Input */}
+                    {/* Date Input */}
                     <input 
                         type="date" 
                         name="dateOfEvent" 
@@ -148,6 +146,18 @@ const AdminDashboard = () => {
                         className="w-full p-3 border rounded-lg" 
                         placeholder="Exam/Event Date (Optional)"
                     />
+                    
+                    {/* NEW INPUT: Registration Link (Applies to 'event' type) */}
+                    {announcementForm.type === 'event' && (
+                         <input 
+                            type="url" 
+                            name="registrationLink" 
+                            value={announcementForm.registrationLink} 
+                            onChange={(e) => handleChange(e, announcementForm, setAnnouncementForm)} 
+                            className="w-full p-3 border border-indigo-300 rounded-lg" 
+                            placeholder="Registration/Sign-up Link (Required for Events)"
+                        />
+                    )}
 
                     {/* Content */}
                     <textarea required placeholder="Full Announcement Details..." name="content" value={announcementForm.content} onChange={(e) => handleChange(e, announcementForm, setAnnouncementForm)} rows="4" className="w-full p-3 border rounded-lg resize-none" />
@@ -182,9 +192,9 @@ const AdminDashboard = () => {
                             </option>
                         ))}
                     </select>
-                    <input type="text" required placeholder="Subject Code (e.g., CS101)" name="code" value={subjectForm.code} onChange={(e) => handleChange(e, subjectForm, setSubjectForm)} className="w-full p-3 border rounded-lg" />
-                    <input type="text" required placeholder="Subject Title" name="title" value={subjectForm.title} onChange={(e) => handleChange(e, subjectForm, setSubjectForm)} className="w-full p-3 border rounded-lg" />
-                    <textarea placeholder="Description" name="description" value={subjectForm.description} onChange={(e) => handleChange(e, subjectForm, setSubjectForm)} className="w-full p-3 border rounded-lg resize-none" />
+                    <input type="text" required placeholder="Subject Code (e.g., CS101)" name="code" value={subjectForm.code} onChange={(e) => handleChange(e, subjectForm, setFormState)} className="w-full p-3 border rounded-lg" />
+                    <input type="text" required placeholder="Subject Title" name="title" value={subjectForm.title} onChange={(e) => handleChange(e, subjectForm, setFormState)} className="w-full p-3 border rounded-lg" />
+                    <textarea placeholder="Description" name="description" value={subjectForm.description} onChange={(e) => handleChange(e, subjectForm, setFormState)} className="w-full p-3 border rounded-lg resize-none" />
                     <motion.button type="submit" whileHover={{ scale: 1.02 }} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-lg"><Plus className="w-5 h-5 inline mr-2" /> Add Subject</motion.button>
                 </form>
             );
@@ -228,9 +238,21 @@ const AdminDashboard = () => {
                     <option value="video">Video Link</option>
                     <option value="reference">Other Reference</option>
                 </select>
-                <input type="text" required placeholder="Resource Title" name="title" value={resourceForm.title} onChange={(e) => handleChange(e, resourceForm, setResourceForm)} className="w-full p-3 border rounded-lg" />
-                <input type="url" required placeholder="Google Drive Share URL / Embed Link *" name="driveWebViewLink" value={resourceForm.driveWebViewLink} onChange={(e) => handleChange(e, resourceForm, setResourceForm)} className="w-full p-3 border rounded-lg" />
-                <input type="text" placeholder="Tags (comma-separated)" name="tags" value={resourceForm.tags} onChange={(e) => handleChange(e, resourceForm, setResourceForm)} className="w-full p-3 border rounded-lg" />
+                <input type="text" required placeholder="Resource Title" name="title" value={resourceForm.title} onChange={(e) => handleChange(e, resourceForm, setFormState)} className="w-full p-3 border rounded-lg" />
+                
+                {/* ADDED DESCRIPTION TEXTAREA */}
+                <textarea 
+                    placeholder="Brief description or context for the resource (Optional)" 
+                    name="description" 
+                    value={resourceForm.description} 
+                    onChange={(e) => handleChange(e, resourceForm, setFormState)} 
+                    className="w-full p-3 border rounded-lg resize-none"
+                    rows="3"
+                />
+
+                <input type="url" required placeholder="Google Drive Share URL / Embed Link *" name="driveWebViewLink" value={resourceForm.driveWebViewLink} onChange={(e) => handleChange(e, resourceForm, setFormState)} className="w-full p-3 border rounded-lg" />
+                
+                <input type="text" placeholder="Tags (comma-separated)" name="tags" value={resourceForm.tags} onChange={(e) => handleChange(e, resourceForm, setFormState)} className="w-full p-3 border rounded-lg" />
                 <motion.button type="submit" whileHover={{ scale: 1.02 }} className="w-full py-3 bg-green-600 text-white font-bold rounded-lg"><FileText className="w-5 h-5 inline mr-2" /> Add Resource</motion.button>
             </form>
         );
@@ -268,8 +290,6 @@ const AdminDashboard = () => {
             <div className="max-w-xl bg-white p-8 rounded-xl shadow-lg border">
                 {renderForm()}
             </div>
-
-            {/* Placeholder for Content Management (TODO: Annoucements/Users) - Removed old placeholder */}
         </div>
     );
 };

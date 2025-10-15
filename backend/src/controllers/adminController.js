@@ -41,9 +41,11 @@ exports.addResource = async (req, res) => {
         if (!subject) return res.status(404).json({ msg: 'Subject not found.' });
 
         const resource = new Resource({
+            // FIX: This spreads all fields, including the new 'description', 'title', and 'type'
             ...req.body,
             uploadedBy: req.user.userId,
             year: subject.yearId.yearNumber, // Populate year number
+            // The tags string from the frontend is converted to an array here
             tags: req.body.tags ? req.body.tags.split(',').map(tag => tag.trim()) : []
         });
         await resource.save();
