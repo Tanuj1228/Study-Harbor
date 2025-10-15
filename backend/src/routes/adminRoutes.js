@@ -9,13 +9,20 @@ router.use(auth, requireAdmin);
 // Core Content Management
 router.post('/years', adminController.createYear);
 router.post('/subjects', adminController.createSubject);
-router.post('/resources', adminController.addResource); // Add note, syllabus, video
+router.post('/resources', adminController.addResource);
 
 // Announcements and Holidays
 router.post('/announcements', adminController.createAnnouncement);
 router.post('/holidays', adminController.createHoliday);
 
-// User Management (optional, but good for a full dashboard)
+// NEW QUOTE MANAGEMENT ROUTES
+router.post('/quotes', adminController.createQuote);
+router.put('/quotes/:quoteId/set', adminController.setQuote);
+
+// FIX: Added GET route to fetch all quotes for the Admin Dashboard list
+router.get('/quotes', adminController.getAllQuotes); 
+
+// User Management
 router.get('/users', adminController.getAllUsers);
 router.put('/users/:userId/role', adminController.updateUserRole);
 

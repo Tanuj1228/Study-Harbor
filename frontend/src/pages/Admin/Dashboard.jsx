@@ -2,17 +2,22 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import api from '../../utils/api';
-import { BookOpen, Calendar, Plus, FileText, Users, Bell } from 'lucide-react'; 
+import { BookOpen, Calendar, Plus, FileText, Users, Bell, Globe } from 'lucide-react'; 
 
 const AdminDashboard = () => {
     const [years, setYears] = useState([]);
     const [subjects, setSubjects] = useState([]);
+    const [quotes, setQuotes] = useState([]);
+    const [quoteForm, setQuoteForm] = useState({ quote: '', author: '' });
+
     const [status, setStatus] = useState({ type: null, message: '' });
     const [activeTab, setActiveTab] = useState('resources');
     
     // Form States
-    // UPDATED resourceForm reset logic (minor cleanup)
-    const [resourceForm, setResourceForm] = useState({ subjectId: '', title: '', type: 'note', driveWebViewLink: '', tags: '', description: '' }); 
+    // FIX/UPDATE: resourceForm includes 'description' and the new 'registrationLink'
+    const [resourceForm, setResourceForm] = useState({ 
+        subjectId: '', title: '', type: 'note', driveWebViewLink: '', tags: '', description: '', registrationLink: '' 
+    }); 
     
     const [subjectForm, setSubjectForm] = useState({ yearId: '', code: '', title: '', description: '' });
     const [holidayForm, setHolidayForm] = useState({ date: '', title: '' });
@@ -24,19 +29,24 @@ const AdminDashboard = () => {
         type: 'exam', 
         pinned: false,
         dateOfEvent: '',
-        registrationLink: '' // <-- NEW FIELD ADDED
+        registrationLink: ''
     }); 
 
 
     useEffect(() => {
+        // Fetch years, subjects, and current quotes to populate forms
         const fetchData = async () => {
             try {
-                const [yearsRes, subjectsRes] = await Promise.all([
+                // Fetch calls for prerequisite data and quotes
+                const [yearsRes, subjectsRes, quotesRes] = await Promise.all([
                     api.get('/years'),
-                    api.get('/subjects') 
+                    api.get('/subjects'),
+                    api.get('/admin/quotes') // ASSUMPTION: Admin route to get all quotes
                 ]);
+                
                 setYears(yearsRes.data);
                 setSubjects(subjectsRes.data);
+                setQuotes(quotesRes.data); // Set all quotes for the management tab
                 
             } catch (err) {
                 const msg = err.response?.data?.msg || 'Check backend server and MongoDB connection.';
@@ -45,7 +55,7 @@ const AdminDashboard = () => {
             }
         };
         fetchData();
-    }, []); 
+    }, []); // Run only once on mount
 
     const showStatus = (type, message) => {
         setStatus({ type, message });
@@ -59,15 +69,44 @@ const AdminDashboard = () => {
             [name]: type === 'checkbox' ? checked : value
         });
     };
+    
+    // --- Handlers ---
+
+    // --- Quote Management Handlers ---
+    const handleQuoteSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/admin/quotes', quoteForm); // FIX: Added /admin prefix
+            showStatus('success', `Quote added successfully!`);
+            setQuoteForm({ quote: '', author: '' });
+            // Re-fetch all quotes
+            const quotesRes = await api.get('/admin/quotes'); 
+            setQuotes(quotesRes.data);
+        } catch (err) {
+            showStatus('error', err.response?.data?.msg || 'Failed to add quote.');
+        }
+    };
+
+    const handleSetQuote = async (quoteId) => {
+        try {
+            await api.put(`/admin/quotes/${quoteId}/set`); // FIX: Added /admin prefix
+            showStatus('success', 'Quote successfully set for the day!');
+            // Re-fetch all quotes to update the 'isSelected' flag
+            const quotesRes = await api.get('/admin/quotes'); 
+            setQuotes(quotesRes.data);
+        } catch (err) {
+            showStatus('error', err.response?.data?.msg || 'Failed to set quote.');
+        }
+    };
+    // --- End Quote Handlers ---
+
 
     // --- Announcement Handler ---
     const handleAnnouncementSubmit = async (e) => {
         e.preventDefault();
         try {
-            // The post data includes dateOfEvent and registrationLink
             await api.post('/admin/announcements', announcementForm);
             showStatus('success', `Announcement "${announcementForm.title}" added successfully!`);
-            // Reset form state with all fields
             setAnnouncementForm({ title: '', content: '', type: 'exam', pinned: false, dateOfEvent: '', registrationLink: '' }); 
         } catch (err) {
             showStatus('error', err.response?.data?.msg || 'Failed to add announcement. Check inputs.');
@@ -75,18 +114,19 @@ const AdminDashboard = () => {
     };
 
 
-    // --- Resource Handler (Reset logic fixed) ---
+    // --- Resource Handler ---
     const handleResourceSubmit = async (e) => {
         e.preventDefault();
         try {
             await api.post('/admin/resources', resourceForm);
             showStatus('success', `Resource "${resourceForm.title}" added successfully!`);
-            setResourceForm({ subjectId: '', title: '', type: 'note', driveWebViewLink: '', tags: '', description: '' }); 
+            setResourceForm({ subjectId: '', title: '', type: 'note', driveWebViewLink: '', tags: '', description: '', registrationLink: '' }); 
         } catch (err) {
             showStatus('error', err.response?.data?.msg || 'Failed to add resource. Check inputs.');
         }
     };
 
+    // --- Subject Handler ---
     const handleSubjectSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -115,7 +155,40 @@ const AdminDashboard = () => {
 
     // --- Render Form based on Tab ---
     const renderForm = () => {
-        // Form: Add Announcement
+        // Form: Quote Management
+        if (activeTab === 'quotes') {
+            return (
+                <div className="space-y-6">
+                    <form onSubmit={handleQuoteSubmit} className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                        <h4 className="text-xl font-semibold text-indigo-700 mb-3">Add New Quote</h4>
+                        <textarea required placeholder="Quote Text" name="quote" value={quoteForm.quote} onChange={(e) => handleChange(e, quoteForm, setQuoteForm)} rows="3" className="w-full p-3 border rounded-lg resize-none" />
+                        <input type="text" required placeholder="Author" name="author" value={quoteForm.author} onChange={(e) => handleChange(e, quoteForm, setQuoteForm)} className="w-full p-3 border rounded-lg" />
+                        <motion.button type="submit" whileHover={{ scale: 1.02 }} className="w-full py-3 bg-indigo-500 text-white font-bold rounded-lg"><Plus className="w-5 h-5 inline mr-2" /> Save Quote</motion.button>
+                    </form>
+
+                    <h4 className="text-xl font-semibold border-b pb-2">Manage Quotes ({quotes.length})</h4>
+                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                        {quotes.map(q => (
+                            <div key={q._id} className={`p-3 rounded-lg flex justify-between items-center ${q.isSelected ? 'bg-green-100 border border-green-500' : 'bg-white border'}`}>
+                                <div>
+                                    <p className="font-medium">"{q.quote.substring(0, 50)}..."</p>
+                                    <p className="text-xs text-gray-500">- {q.author}</p>
+                                </div>
+                                <button 
+                                    onClick={() => handleSetQuote(q._id)} 
+                                    disabled={q.isSelected}
+                                    className={`text-sm py-1 px-3 rounded-full transition-colors ${q.isSelected ? 'bg-green-500 text-white cursor-default' : 'bg-gray-200 hover:bg-gray-300'}`}
+                                >
+                                    {q.isSelected ? 'CURRENTLY SET' : 'Set as Today'}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // Form: Add Announcement (Existing code)
         if (activeTab === 'announcements') { 
              return (
                 <form onSubmit={handleAnnouncementSubmit} className="space-y-4">
@@ -147,7 +220,7 @@ const AdminDashboard = () => {
                         placeholder="Exam/Event Date (Optional)"
                     />
                     
-                    {/* NEW INPUT: Registration Link (Applies to 'event' type) */}
+                    {/* NEW INPUT: Registration Link (Conditional for 'event' type) */}
                     {announcementForm.type === 'event' && (
                          <input 
                             type="url" 
@@ -192,9 +265,10 @@ const AdminDashboard = () => {
                             </option>
                         ))}
                     </select>
-                    <input type="text" required placeholder="Subject Code (e.g., CS101)" name="code" value={subjectForm.code} onChange={(e) => handleChange(e, subjectForm, setFormState)} className="w-full p-3 border rounded-lg" />
-                    <input type="text" required placeholder="Subject Title" name="title" value={subjectForm.title} onChange={(e) => handleChange(e, subjectForm, setFormState)} className="w-full p-3 border rounded-lg" />
-                    <textarea placeholder="Description" name="description" value={subjectForm.description} onChange={(e) => handleChange(e, subjectForm, setFormState)} className="w-full p-3 border rounded-lg resize-none" />
+                    {/* FIX: Corrected all handleChange calls to use setSubjectForm */}
+                    <input type="text" required placeholder="Subject Code (e.g., CS101)" name="code" value={subjectForm.code} onChange={(e) => handleChange(e, subjectForm, setSubjectForm)} className="w-full p-3 border rounded-lg" />
+                    <input type="text" required placeholder="Subject Title" name="title" value={subjectForm.title} onChange={(e) => handleChange(e, subjectForm, setSubjectForm)} className="w-full p-3 border rounded-lg" />
+                    <textarea placeholder="Description" name="description" value={subjectForm.description} onChange={(e) => handleChange(e, subjectForm, setSubjectForm)} className="w-full p-3 border rounded-lg resize-none" />
                     <motion.button type="submit" whileHover={{ scale: 1.02 }} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-lg"><Plus className="w-5 h-5 inline mr-2" /> Add Subject</motion.button>
                 </form>
             );
@@ -238,21 +312,21 @@ const AdminDashboard = () => {
                     <option value="video">Video Link</option>
                     <option value="reference">Other Reference</option>
                 </select>
-                <input type="text" required placeholder="Resource Title" name="title" value={resourceForm.title} onChange={(e) => handleChange(e, resourceForm, setFormState)} className="w-full p-3 border rounded-lg" />
+                <input type="text" required placeholder="Resource Title" name="title" value={resourceForm.title} onChange={(e) => handleChange(e, resourceForm, setResourceForm)} className="w-full p-3 border rounded-lg" />
                 
                 {/* ADDED DESCRIPTION TEXTAREA */}
                 <textarea 
                     placeholder="Brief description or context for the resource (Optional)" 
                     name="description" 
                     value={resourceForm.description} 
-                    onChange={(e) => handleChange(e, resourceForm, setFormState)} 
+                    onChange={(e) => handleChange(e, resourceForm, setResourceForm)} 
                     className="w-full p-3 border rounded-lg resize-none"
                     rows="3"
                 />
 
-                <input type="url" required placeholder="Google Drive Share URL / Embed Link *" name="driveWebViewLink" value={resourceForm.driveWebViewLink} onChange={(e) => handleChange(e, resourceForm, setFormState)} className="w-full p-3 border rounded-lg" />
+                <input type="url" required placeholder="Google Drive Share URL / Embed Link *" name="driveWebViewLink" value={resourceForm.driveWebViewLink} onChange={(e) => handleChange(e, resourceForm, setResourceForm)} className="w-full p-3 border rounded-lg" />
                 
-                <input type="text" placeholder="Tags (comma-separated)" name="tags" value={resourceForm.tags} onChange={(e) => handleChange(e, resourceForm, setFormState)} className="w-full p-3 border rounded-lg" />
+                <input type="text" placeholder="Tags (comma-separated)" name="tags" value={resourceForm.tags} onChange={(e) => handleChange(e, resourceForm, setResourceForm)} className="w-full p-3 border rounded-lg" />
                 <motion.button type="submit" whileHover={{ scale: 1.02 }} className="w-full py-3 bg-green-600 text-white font-bold rounded-lg"><FileText className="w-5 h-5 inline mr-2" /> Add Resource</motion.button>
             </form>
         );
@@ -275,6 +349,7 @@ const AdminDashboard = () => {
                 <button onClick={() => setActiveTab('subjects')} className={`py-2 px-4 font-medium transition-colors ${activeTab === 'subjects' ? 'border-b-4 border-indigo-600 text-indigo-600' : 'text-gray-500'}`}><BookOpen className="w-5 h-5 inline mr-1" /> Add Subjects/Years</button>
                 <button onClick={() => setActiveTab('holidays')} className={`py-2 px-4 font-medium transition-colors ${activeTab === 'holidays' ? 'border-b-4 border-red-600 text-red-600' : 'text-gray-500'}`}><Calendar className="w-5 h-5 inline mr-1" /> Add Holidays</button>
                 <button onClick={() => setActiveTab('announcements')} className={`py-2 px-4 font-medium transition-colors ${activeTab === 'announcements' ? 'border-b-4 border-pink-600 text-pink-600' : 'text-gray-500'}`}><Bell className="w-5 h-5 inline mr-1" /> Announcements</button> {/* NEW TAB */}
+                <button onClick={() => setActiveTab('quotes')} className={`py-2 px-4 font-medium transition-colors ${activeTab === 'quotes' ? 'border-b-4 border-indigo-500 text-indigo-500' : 'text-gray-500'}`}><Globe className="w-5 h-5 inline mr-1" /> Quotes</button> {/* NEW QUOTE TAB */}
             </div>
 
             {status.message && (

@@ -3,6 +3,48 @@ const Subject = require('../models/Subject');
 const Resource = require('../models/Resource');
 const Announcement = require('../models/Announcement');
 const Holiday = require('../models/Holiday');
+const Quote = require('../models/Quote'); // <-- NEW IMPORT
+
+// --- NEW FUNCTION: Get or Generate Quote of the Day (QOTD) ---
+exports.getQuoteOfTheDay = async (req, res) => {
+    try {
+        // Find the currently selected quote
+        let currentQuote = await Quote.findOne({ isSelected: true });
+
+        // Check if a new quote needs to be selected
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Logic: No quote selected OR the last selected quote was on a previous day
+        if (!currentQuote || (currentQuote.lastUsed && currentQuote.lastUsed.toISOString().split('T')[0] !== today)) {
+            
+            // Step 1: Clear all existing 'isSelected' flags
+            await Quote.updateMany({}, { isSelected: false });
+            
+            // Step 2: Find the least recently used quote (or a random one if all are fresh)
+            const availableQuotes = await Quote.find().sort({ lastUsed: 1 }).limit(1);
+            
+            if (availableQuotes.length > 0) {
+                // Select the next quote
+                currentQuote = availableQuotes[0];
+                
+                // Step 3: Update and set the new quote
+                currentQuote.isSelected = true;
+                currentQuote.lastUsed = new Date();
+                await currentQuote.save();
+            } else if (!currentQuote) {
+                // Fallback if the database is empty
+                return res.json({ quote: 'Start adding quotes now!', author: 'Admin' });
+            }
+        }
+        
+        // Return the selected/generated quote
+        res.json({ quote: currentQuote.quote, author: currentQuote.author });
+    } catch (err) {
+        console.error("Quote of the Day Error:", err);
+        // Safely return a static fallback on error
+        res.json({ quote: 'The only way to do great work is to love what you do.', author: 'Steve Jobs' });
+    }
+};
 
 // --- NEW FUNCTION: Get single announcement details ---
 exports.getAnnouncementById = async (req, res) => {
@@ -39,6 +81,7 @@ exports.getAllSubjects = async (req, res) => {
         res.status(500).json({ msg: 'Server error fetching all subjects.' });
     }
 };
+
 // --- PUBLIC API ENDPOINTS ---
 
 // 1. Core Structure

@@ -6,11 +6,6 @@ import api from '../utils/api';
 import AnimatedBackground from '../components/AnimatedBackground'; // Background animation
 import { Search, ChevronRight } from 'lucide-react';
 
-const QUOTE_OF_THE_DAY = {
-    quote: "The only way to do great work is to love what you do.",
-    author: "Steve Jobs"
-};
-
 const Card = ({ children }) => (
     <motion.div
         initial={{ y: 20, opacity: 0 }}
@@ -27,22 +22,31 @@ const Home = () => {
     const [announcements, setAnnouncements] = useState([]);
     const [holidays, setHolidays] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
+    // NEW STATE: To hold the dynamic quote
+    const [quote, setQuote] = useState({ quote: 'Loading inspiration...', author: ' ' }); 
     const navigate = useNavigate();
 
     useEffect(() => {
         // Fetch essential data on load
         const fetchData = async () => {
             try {
-                const [yearsRes, annRes, holRes] = await Promise.all([
+                // ADDED quoteRes to Promise.all
+                const [yearsRes, annRes, holRes, quoteRes] = await Promise.all([ 
                     api.get('/years'),
                     api.get('/announcements'),
-                    api.get('/holidays')
+                    api.get('/holidays'),
+                    api.get('/quote') // NEW API CALL to fetch Quote of the Day
                 ]);
+                
                 setYears(yearsRes.data);
                 setAnnouncements(annRes.data.slice(0, 3)); // Show top 3 for snippet
                 setHolidays(holRes.data.slice(0, 3)); // Show next 3 holidays
+                setQuote(quoteRes.data); // Set the dynamic quote
+
             } catch (err) {
                 console.error("Failed to fetch home data:", err);
+                // Set fallback quote on error
+                setQuote({ quote: 'The only way to do great work is to love what you do.', author: 'Steve Jobs' });
             }
         };
         fetchData();
@@ -60,7 +64,7 @@ const Home = () => {
             <AnimatedBackground /> {/* Lottie Background */}
             <div className="relative z-10">
                 
-                {/* Quote of the Day (Centerpiece) */}
+                {/* Quote of the Day (Centerpiece) - NOW DYNAMIC */}
                 <motion.div
                     className="max-w-4xl mx-auto text-center mb-12 p-8 bg-indigo-500/80 backdrop-blur-sm rounded-3xl shadow-2xl text-white"
                     initial={{ scale: 0.8, opacity: 0 }}
@@ -68,8 +72,9 @@ const Home = () => {
                     transition={{ type: "spring", stiffness: 100 }}
                 >
                     <h2 className="text-xl font-light italic mb-2">Quote of the Day.</h2>
-                    <p className="text-3xl font-bold leading-snug">"{QUOTE_OF_THE_DAY.quote}"</p>
-                    <p className="text-lg mt-3 font-medium">- {QUOTE_OF_THE_DAY.author}</p>
+                    {/* UPDATED: Use the dynamic quote state */}
+                    <p className="text-3xl font-bold leading-snug">"{quote.quote}"</p>
+                    <p className="text-lg mt-3 font-medium">- {quote.author}</p>
                 </motion.div>
 
                 {/* Main Grid: Announcements, Years, Holidays */}
@@ -82,7 +87,13 @@ const Home = () => {
                             {announcements.length > 0 ? announcements.map(ann => (
                                 <li key={ann._id} className="text-gray-700 flex items-start space-x-2">
                                     <ChevronRight className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" />
-                                    <span className="font-medium hover:text-indigo-600 cursor-pointer transition-colors" onClick={() => navigate('/announcements')}>{ann.title}</span>
+                                    <span 
+                                        className="font-medium hover:text-indigo-600 cursor-pointer transition-colors" 
+                                        // FIX: Navigate to the detail page for the announcement snippet
+                                        onClick={() => navigate(`/announcements/${ann._id}`)} 
+                                    >
+                                        {ann.title}
+                                    </span>
                                 </li>
                             )) : <p className="text-gray-500">No recent announcements.</p>}
                         </ul>

@@ -8,14 +8,15 @@ const publicController = require('../controllers/publicController');
 router.get('/years', publicController.getYears);
 router.get('/years/:yearId/subjects', publicController.getSubjectsByYear);
 
-// Get single subject details
 router.get('/subjects/:subjectId', publicController.getSubjectById); 
 
 router.get('/subjects/:subjectId/resources', publicController.getResourcesBySubject);
 
 // Information
+// NEW ROUTE: Get Quote of the Day
+router.get('/quote', publicController.getQuoteOfTheDay); 
 router.get('/announcements', publicController.getAnnouncements);
-// NEW ROUTE: Get single announcement details by ID (Needed for the Detail Page)
+
 router.get('/announcements/:id', publicController.getAnnouncementById); 
 router.get('/holidays', publicController.getHolidays);
 

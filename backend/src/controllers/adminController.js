@@ -4,6 +4,7 @@ const Resource = require('../models/Resource');
 const Announcement = require('../models/Announcement');
 const Holiday = require('../models/Holiday');
 const User = require('../models/User');
+const Quote = require('../models/Quote'); // <-- CORRECT IMPORT
 
 // --- ADMIN API ENDPOINTS ---
 
@@ -41,7 +42,7 @@ exports.addResource = async (req, res) => {
         if (!subject) return res.status(404).json({ msg: 'Subject not found.' });
 
         const resource = new Resource({
-            // FIX: This spreads all fields, including the new 'description', 'title', and 'type'
+            // This correctly spreads all fields, including description and registrationLink
             ...req.body,
             uploadedBy: req.user.userId,
             year: subject.yearId.yearNumber, // Populate year number
@@ -75,6 +76,54 @@ exports.createHoliday = async (req, res) => {
         res.status(400).json({ msg: 'Error creating holiday', error: err.message });
     }
 };
+
+
+// --- NEW QUOTE MANAGEMENT FUNCTIONS ---
+
+// Create a new quote
+exports.createQuote = async (req, res) => {
+    try {
+        const quote = new Quote(req.body);
+        await quote.save();
+        res.status(201).json(quote);
+    } catch (err) {
+        res.status(400).json({ msg: 'Error creating quote', error: err.message });
+    }
+};
+
+// Admin forces a specific quote to be "Quote of the Day"
+exports.setQuote = async (req, res) => {
+    const { quoteId } = req.params;
+    try {
+        // 1. Clear the 'isSelected' flag on all quotes
+        await Quote.updateMany({}, { isSelected: false });
+
+        // 2. Set the selected quote
+        const quote = await Quote.findByIdAndUpdate(
+            quoteId, 
+            { isSelected: true, lastUsed: new Date() }, 
+            { new: true }
+        );
+        if (!quote) return res.status(404).json({ msg: 'Quote not found.' });
+
+        res.json({ msg: 'Quote successfully set for the day.', quote });
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error setting quote.' });
+    }
+};
+
+// FIX: ADDED MISSING FUNCTION for the Admin Dashboard List
+exports.getAllQuotes = async (req, res) => {
+    try {
+        // Sort by 'isSelected' (current quote first), then by last used date
+        const quotes = await Quote.find().sort({ isSelected: -1, lastUsed: -1 });
+        res.json(quotes);
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error fetching quotes.' });
+    }
+};
+// --- END QUOTE MANAGEMENT ---
+
 
 // 4. User Management (Promote/Demote)
 exports.updateUserRole = async (req, res) => {
