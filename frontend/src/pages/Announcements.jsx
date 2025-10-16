@@ -1,11 +1,11 @@
 // frontend/src/pages/Announcements.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react'; // ADDED useMemo
 import { motion } from 'framer-motion';
 // CRITICAL: Import useNavigate for click navigation
 import { useNavigate } from 'react-router-dom'; 
 import api from '../utils/api';
 // Using FileText for Exams and EventIcon for Events/General
-import { Bell, Pin, FileText, Calendar as EventIcon } from 'lucide-react'; 
+import { Bell, Pin, FileText, Calendar as EventIcon, Search } from 'lucide-react'; // ADDED Search
 
 // CRITICAL: AnnouncementCard must accept navigate and use it
 const AnnouncementCard = ({ announcement, delay }) => {
@@ -24,7 +24,8 @@ const AnnouncementCard = ({ announcement, delay }) => {
     // Handle click to navigate to the detail page
     const handleClick = () => {
         // If it's an event, go to the detail page (e.g., /announcements/123)
-        if (isClickable) {
+        // You can also make all announcements clickable if you want detail for all types
+        if (isClickable) { 
             navigate(`/announcements/${announcement._id}`);
         }
     };
@@ -78,8 +79,12 @@ const AnnouncementCard = ({ announcement, delay }) => {
 };
 
 const Announcements = () => {
-    const [allAnnouncements, setAllAnnouncements] = useState([]);
+    // State to hold ALL announcements fetched from the API
+    const [allAnnouncements, setAllAnnouncements] = useState([]); 
     const [loading, setLoading] = useState(true);
+    // NEW STATE: Holds the real-time search query
+    const [searchQuery, setSearchQuery] = useState(''); 
+
 
     useEffect(() => {
         const fetchAnnouncements = async () => {
@@ -95,10 +100,24 @@ const Announcements = () => {
         fetchAnnouncements();
     }, []);
 
-    // Filter announcements into three sections
-    const examAnnouncements = allAnnouncements.filter(ann => ann.type === 'exam');
-    const eventAnnouncements = allAnnouncements.filter(ann => ann.type === 'event');
-    const generalAnnouncements = allAnnouncements.filter(ann => ann.type === 'general');
+    // NEW LOGIC: Filter announcements based on search query
+    const filteredAnnouncements = useMemo(() => {
+        if (!searchQuery) {
+            return allAnnouncements;
+        }
+
+        const lowercasedQuery = searchQuery.toLowerCase();
+        
+        return allAnnouncements.filter(ann => 
+            ann.title.toLowerCase().includes(lowercasedQuery) ||
+            ann.content.toLowerCase().includes(lowercasedQuery)
+        );
+    }, [allAnnouncements, searchQuery]); // Re-calculate when data or query changes
+
+    // Filter announcements into three sections for display
+    const examAnnouncements = filteredAnnouncements.filter(ann => ann.type === 'exam');
+    const eventAnnouncements = filteredAnnouncements.filter(ann => ann.type === 'event');
+    const generalAnnouncements = filteredAnnouncements.filter(ann => ann.type === 'general');
 
     const renderSection = (title, Icon, list, emptyMessage) => (
         <div className="mb-10">
@@ -108,12 +127,11 @@ const Announcements = () => {
             </h2>
             {list.length === 0 ? (
                 <p className="text-center text-gray-500 p-8 bg-gray-50 rounded-lg border border-dashed">
-                    {emptyMessage}
+                    {searchQuery ? `No results found matching "${searchQuery}".` : emptyMessage}
                 </p>
             ) : (
                 <div className="space-y-6">
                     {list.map((ann, index) => (
-                        // Pass the card component
                         <AnnouncementCard key={ann._id} announcement={ann} delay={index * 0.05} />
                     ))}
                 </div>
@@ -131,17 +149,40 @@ const Announcements = () => {
                 <Bell className="w-8 h-8" />
                 <span>Campus Alerts & Notices</span>
             </motion.h1>
+            
+            {/* NEW: Real-Time Search Input */}
+            <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-8"
+            >
+                <div className="flex items-center space-x-2 bg-white p-2 rounded-xl shadow-lg border">
+                    <Search className="w-5 h-5 text-gray-400 ml-2" />
+                    <input
+                        type="text"
+                        placeholder="Search announcements by title or content..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)} // <-- Triggers real-time filtering
+                        className="flex-grow p-2 border-none focus:ring-0 focus:outline-none text-gray-700"
+                    />
+                </div>
+            </motion.div>
+
 
             {loading && <p className="text-center text-indigo-600">Loading announcements...</p>}
 
-            {!loading && allAnnouncements.length > 0 && (
+            {!loading && (filteredAnnouncements.length > 0 || searchQuery === '') && (
                 <>
-                    {/* Only Event announcements should be clickable to see details. Exams/General show content here. */}
                     {renderSection('Exam & Academic Announcements', FileText, examAnnouncements, 'No current exam schedules or academic alerts.')}
                     {renderSection('Event & Extracurricular Notices', EventIcon, eventAnnouncements, 'No upcoming event announcements.')}
-                    {/* General notices display only if there are any */}
                     {generalAnnouncements.length > 0 && renderSection('General Notices', Bell, generalAnnouncements, '')}
                 </>
+            )}
+            
+            {!loading && allAnnouncements.length > 0 && filteredAnnouncements.length === 0 && searchQuery !== '' && (
+                <p className="text-center text-gray-500 p-10 bg-gray-50 rounded-lg">
+                    No active announcements found matching "{searchQuery}".
+                </p>
             )}
             
             {!loading && allAnnouncements.length === 0 && (

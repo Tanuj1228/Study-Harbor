@@ -35,26 +35,41 @@ function App() {
         <AuthProvider>
           <Layout>
             <Routes>
-              {/* Public Routes */}
+              {/* PUBLIC/UNPROTECTED ROUTES */}
               <Route path="/" element={<Home />} />
-              <Route path="/calendar" element={<Calendar />} />
-              <Route path="/announcements" element={<Announcements />} />
-              {/* NEW ROUTE: Announcement Detail Page */}
-              <Route path="/announcements/:id" element={<AnnouncementDetail />} /> 
-              <Route path="/feedback" element={<Feedback />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/search" element={<Search />} />
-
-              {/* Auth Routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/feedback" element={<Feedback />} />
+              
+              {/* PROTECTED ROUTES (Requires Login) */}
+              <Route 
+                path="/calendar" 
+                element={<ProtectedRoute><Calendar /></ProtectedRoute>} 
+              />
+              <Route 
+                path="/announcements" 
+                element={<ProtectedRoute><Announcements /></ProtectedRoute>} 
+              />
+              <Route 
+                path="/announcements/:id" 
+                element={<ProtectedRoute><AnnouncementDetail /></ProtectedRoute>} 
+              />
+              <Route 
+                path="/search" 
+                element={<ProtectedRoute><Search /></ProtectedRoute>} 
+              />
+              <Route 
+                path="/year/:yearId" 
+                element={<ProtectedRoute><YearPage /></ProtectedRoute>} 
+              />
+              <Route 
+                path="/subject/:subjectId" 
+                element={<ProtectedRoute><SubjectPage /></ProtectedRoute>} 
+              />
 
-              {/* Core Content Routes */}
-              <Route path="/year/:yearId" element={<YearPage />} />
-              <Route path="/subject/:subjectId" element={<SubjectPage />} />
-
-              {/* Admin Routes (PROTECTED) */}
+              {/* ADMIN ONLY ROUTE (Already Protected) */}
               <Route 
                 path="/admin/dashboard" 
                 element={
@@ -69,7 +84,7 @@ function App() {
             </Routes>
           </Layout>
         </AuthProvider>
-      </GoogleOAuthProvider> {/* <-- END WRAPPER */}
+      </GoogleOAuthProvider>
     </Router>
   );
 }
