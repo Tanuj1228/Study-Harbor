@@ -4,7 +4,7 @@ const Resource = require('../models/Resource');
 const Announcement = require('../models/Announcement');
 const Holiday = require('../models/Holiday');
 const User = require('../models/User');
-const Quote = require('../models/Quote'); // <-- CORRECT IMPORT
+const Quote = require('../models/Quote');
 
 // --- ADMIN API ENDPOINTS ---
 
@@ -32,21 +32,17 @@ exports.createSubject = async (req, res) => {
 // 2. Resources (Notes, Syllabus, Videos)
 exports.addResource = async (req, res) => {
     try {
-        // Validation check for essential fields, especially driveWebViewLink for MVP
         if (!req.body.driveWebViewLink) {
             return res.status(400).json({ msg: 'driveWebViewLink is required for the resource.' });
         }
         
-        // Find year number based on subject's yearId (optional but useful for filtering)
         const subject = await Subject.findById(req.body.subjectId).populate('yearId');
         if (!subject) return res.status(404).json({ msg: 'Subject not found.' });
 
         const resource = new Resource({
-            // This correctly spreads all fields, including description and registrationLink
             ...req.body,
             uploadedBy: req.user.userId,
-            year: subject.yearId.yearNumber, // Populate year number
-            // The tags string from the frontend is converted to an array here
+            year: subject.yearId.yearNumber,
             tags: req.body.tags ? req.body.tags.split(',').map(tag => tag.trim()) : []
         });
         await resource.save();
@@ -56,6 +52,33 @@ exports.addResource = async (req, res) => {
     }
 };
 
+// NEW: Delete Resource
+exports.deleteResource = async (req, res) => {
+    try {
+        const resource = await Resource.findByIdAndDelete(req.params.id);
+        if (!resource) return res.status(404).json({ msg: 'Resource not found.' });
+        res.json({ msg: 'Resource successfully deleted.' });
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error deleting resource.' });
+    }
+};
+
+// NEW: Delete Subject
+exports.deleteSubject = async (req, res) => {
+    try {
+        // OPTIONAL: Delete all resources associated with this subject first
+        await Resource.deleteMany({ subjectId: req.params.id }); 
+        
+        const subject = await Subject.findByIdAndDelete(req.params.id);
+        if (!subject) return res.status(404).json({ msg: 'Subject not found.' });
+        
+        res.json({ msg: 'Subject and associated resources successfully deleted.' });
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error deleting subject.' });
+    }
+};
+
+
 // 3. Announcements and Holidays
 exports.createAnnouncement = async (req, res) => {
     try {
@@ -64,6 +87,17 @@ exports.createAnnouncement = async (req, res) => {
         res.status(201).json(announcement);
     } catch (err) {
         res.status(400).json({ msg: 'Error creating announcement', error: err.message });
+    }
+};
+
+// NEW: Delete Announcement
+exports.deleteAnnouncement = async (req, res) => {
+    try {
+        const announcement = await Announcement.findByIdAndDelete(req.params.id);
+        if (!announcement) return res.status(404).json({ msg: 'Announcement not found.' });
+        res.json({ msg: 'Announcement successfully deleted.' });
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error deleting announcement.' });
     }
 };
 
@@ -77,10 +111,25 @@ exports.createHoliday = async (req, res) => {
     }
 };
 
+exports.deleteHoliday = async (req, res) => {
+    try {
+        // Use findByIdAndDelete to remove the holiday based on the ID passed in the URL params
+        const holiday = await Holiday.findByIdAndDelete(req.params.id);
+        
+        // If no holiday was found, return a 404
+        if (!holiday) {
+            return res.status(404).json({ msg: 'Holiday not found.' });
+        }
+        
+        // Success response
+        res.json({ msg: 'Holiday successfully deleted.' });
+    } catch (err) {
+        // Catch any server or database error
+        res.status(500).json({ msg: 'Server error deleting holiday.' });
+    }
+};
+// --- QUOTE MANAGEMENT FUNCTIONS ---
 
-// --- NEW QUOTE MANAGEMENT FUNCTIONS ---
-
-// Create a new quote
 exports.createQuote = async (req, res) => {
     try {
         const quote = new Quote(req.body);
@@ -91,14 +140,11 @@ exports.createQuote = async (req, res) => {
     }
 };
 
-// Admin forces a specific quote to be "Quote of the Day"
 exports.setQuote = async (req, res) => {
     const { quoteId } = req.params;
     try {
-        // 1. Clear the 'isSelected' flag on all quotes
         await Quote.updateMany({}, { isSelected: false });
 
-        // 2. Set the selected quote
         const quote = await Quote.findByIdAndUpdate(
             quoteId, 
             { isSelected: true, lastUsed: new Date() }, 
@@ -112,10 +158,19 @@ exports.setQuote = async (req, res) => {
     }
 };
 
-// FIX: ADDED MISSING FUNCTION for the Admin Dashboard List
+// NEW: Delete Quote
+exports.deleteQuote = async (req, res) => {
+    try {
+        const quote = await Quote.findByIdAndDelete(req.params.id);
+        if (!quote) return res.status(404).json({ msg: 'Quote not found.' });
+        res.json({ msg: 'Quote successfully deleted.' });
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error deleting quote.' });
+    }
+};
+
 exports.getAllQuotes = async (req, res) => {
     try {
-        // Sort by 'isSelected' (current quote first), then by last used date
         const quotes = await Quote.find().sort({ isSelected: -1, lastUsed: -1 });
         res.json(quotes);
     } catch (err) {

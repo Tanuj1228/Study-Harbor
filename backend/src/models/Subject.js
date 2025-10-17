@@ -10,3 +10,6 @@ const SubjectSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('Subject', SubjectSchema);
+// git add .
+// git commit -m "My changes on anshu branch"
+// git push origin anshu

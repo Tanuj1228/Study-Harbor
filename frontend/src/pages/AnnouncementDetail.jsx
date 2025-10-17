@@ -71,7 +71,7 @@ const AnnouncementDetail = () => {
                 {/* Registration Button (The core feature) */}
                 {isEvent && hasRegistration && (
                     <motion.a
-                        href={announcement.registrationLink}
+                        href="https://docs.google.com/forms/d/e/1FAIpQLSf-G6REEyGikGeS-b31Ky5kr4JYuKFMJEHwrnTnHBW5RL_70Q/viewform?usp=dialog"
                         target="_blank"
                         rel="noopener noreferrer"
                         whileHover={{ scale: 1.03 }}

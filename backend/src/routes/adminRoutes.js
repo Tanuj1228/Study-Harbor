@@ -6,26 +6,31 @@ const adminController = require('../controllers/adminController');
 // All routes in this file require both authentication and admin role.
 router.use(auth, requireAdmin);
 
-// Core Content Management
+// Core Content Management (CREATE)
 router.post('/years', adminController.createYear);
 router.post('/subjects', adminController.createSubject);
 router.post('/resources', adminController.addResource);
 
-// Announcements and Holidays
+// Core Content Management (DELETE)
+router.delete('/subjects/:id', adminController.deleteSubject); 
+router.delete('/resources/:id', adminController.deleteResource); // <-- RESOURCE DELETE ROUTE
+
+// Announcements and Holidays (CREATE)
 router.post('/announcements', adminController.createAnnouncement);
 router.post('/holidays', adminController.createHoliday);
 
-// NEW QUOTE MANAGEMENT ROUTES
+// Announcements and Holidays (DELETE)
+router.delete('/announcements/:id', adminController.deleteAnnouncement);
+router.delete('/holidays/:id', adminController.deleteHoliday); // <-- HOLIDAY DELETE ROUTE
+
+// QUOTE MANAGEMENT
 router.post('/quotes', adminController.createQuote);
 router.put('/quotes/:quoteId/set', adminController.setQuote);
-
-// FIX: Added GET route to fetch all quotes for the Admin Dashboard list
-router.get('/quotes', adminController.getAllQuotes); 
+router.get('/quotes', adminController.getAllQuotes);
+router.delete('/quotes/:id', adminController.deleteQuote);
 
 // User Management
 router.get('/users', adminController.getAllUsers);
 router.put('/users/:userId/role', adminController.updateUserRole);
-
-// To update/delete content, you would add PUT/DELETE routes here (e.g., router.put('/subjects/:id', ...))
 
 module.exports = router;

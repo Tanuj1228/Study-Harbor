@@ -13,7 +13,8 @@ const NavLink = ({ to, children, icon: Icon }) => (
 );
 
 const Navbar = () => {
-  const { isAuthenticated, isAdmin, logout } = useAuth();
+  // FIX: Destructure 'user' object along with authentication state
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -30,6 +31,9 @@ const Navbar = () => {
     { to: '/about', label: 'About Us', icon: null },
     { to: '/contact', label: 'Contact Us', icon: null },
   ];
+
+  // Dynamically set the button text
+  const logoutButtonText = user?.name ? `${user.name.split(' ')[0]} | Logout` : 'Logout';
 
   return (
     <motion.header
@@ -58,13 +62,14 @@ const Navbar = () => {
           {/* Auth/Mobile Menu */}
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
+              // FIX: Used the dynamically set logoutButtonText
               <motion.button 
                 whileHover={{ scale: 1.05 }} 
                 whileTap={{ scale: 0.95 }}
                 onClick={handleLogout}
                 className="flex items-center px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors"
               >
-                <LogOut className="w-4 h-4 mr-1" /> Logout
+                <LogOut className="w-4 h-4 mr-1" /> {logoutButtonText}
               </motion.button>
             ) : (
               <motion.button 
