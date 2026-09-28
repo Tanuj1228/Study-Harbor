@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import AnimatedBackground from '../components/AnimatedBackground'; 
-import { Search, ChevronRight, User } from 'lucide-react'; // Added User icon
+import { Search, ChevronRight, User, Info } from 'lucide-react'; // Added Info icon
 import { useAuth } from '../context/AuthContext'; 
 
 const Card = ({ children }) => (
@@ -25,13 +25,11 @@ const Home = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [quote, setQuote] = useState({ quote: 'Loading inspiration...', author: ' ' }); 
     const navigate = useNavigate();
-    const { isAuthenticated, user } = useAuth(); // <-- GET USER OBJECT AND AUTH STATUS
+    const { isAuthenticated, user } = useAuth();
 
     useEffect(() => {
-        // Fetch ALL data on load (content fetching is public on the Home page)
         const fetchData = async () => {
             try {
-                // Fetch all necessary data concurrently
                 const [yearsRes, annRes, holRes, quoteRes] = await Promise.all([ 
                     api.get('/years'),
                     api.get('/announcements'),
@@ -59,10 +57,8 @@ const Home = () => {
         }
     };
     
-    // Renders the CTA if logged out, or a Welcome Message if logged in
     const renderCallToActionOrWelcome = () => {
         if (!isAuthenticated) {
-            // Render CTA for Logged Out Users
             return (
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -93,7 +89,6 @@ const Home = () => {
                 </motion.div>
             );
         } else {
-            // Render Welcome/Quick Stats for Logged In Users
             return (
                  <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -113,15 +108,14 @@ const Home = () => {
         }
     };
 
-
     return (
         <div className="relative min-h-[80vh] py-10">
             <AnimatedBackground />
             <div className="relative z-10">
                 
-                {/* 1. Quote of the Day (Centerpiece - Always Visible) */}
+                {/* 1. Quote of the Day */}
                 <motion.div
-                    className="max-w-4xl mx-auto text-center mb-12 p-8 bg-indigo-500/80 backdrop-blur-sm rounded-3xl shadow-2xl text-white"
+                    className="max-w-4xl mx-auto text-center mb-8 p-8 bg-indigo-500/80 backdrop-blur-sm rounded-3xl shadow-2xl text-white"
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ type: "spring", stiffness: 100 }}
@@ -131,7 +125,20 @@ const Home = () => {
                     <p className="text-lg mt-3 font-medium">- {quote.author}</p>
                 </motion.div>
 
-                {/* 2. Main Content Grid (Always Render) */}
+                {/* NEW: Under Development Notice Banner */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="max-w-4xl mx-auto mb-12 p-4 bg-amber-50 border border-amber-200 rounded-xl shadow-sm flex items-center justify-center space-x-3 text-amber-800"
+                >
+                    <Info className="w-6 h-6 flex-shrink-0" />
+                    <p className="text-sm md:text-base font-medium">
+                        <strong>Website Under Development:</strong> If you don't find notes for a specific subject, please check the reference videos. Notes will be uploaded shortly!
+                    </p>
+                </motion.div>
+
+                {/* 2. Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
                     
                     {/* LEFT COLUMN: Announcements Snippet */}
@@ -143,7 +150,7 @@ const Home = () => {
                                     <ChevronRight className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" />
                                     <span 
                                         className="font-medium hover:text-indigo-600 cursor-pointer transition-colors" 
-                                        onClick={() => navigate(`/announcements/${ann._id}`)} // Triggers ProtectedRoute
+                                        onClick={() => navigate(`/announcements/${ann._id}`)}
                                     >
                                         {ann.title}
                                     </span>
@@ -167,7 +174,7 @@ const Home = () => {
                                         className="col-span-1"
                                     >
                                         <Link
-                                            to={`/year/${year._id}`} // Triggers ProtectedRoute
+                                            to={`/year/${year._id}`}
                                             className="block w-full text-center py-4 rounded-xl bg-indigo-600 text-white font-bold text-lg shadow-lg hover:bg-indigo-700 transition-colors"
                                         >
                                             {year.displayName}
@@ -215,7 +222,7 @@ const Home = () => {
 
                 </div>
 
-                {/* 3. NEW: Call to Action / Welcome Message (Conditional) */}
+                {/* 3. Call to Action / Welcome Message */}
                 {renderCallToActionOrWelcome()}
 
             </div>
