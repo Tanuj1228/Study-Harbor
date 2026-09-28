@@ -3,16 +3,13 @@
 const Feedback = require('../models/Feedback'); 
 const nodemailer = require('nodemailer');
 
-// UPDATED: Initialize Nodemailer transporter with SendGrid SMTP settings
+// UPDATED: Initialize Nodemailer transporter with SendGrid SSL SMTP settings (port 465 for Cloud Hosts like Render)
 const transporter = nodemailer.createTransport({
-    // Use SendGrid's standard SMTP settings
     host: 'smtp.sendgrid.net', 
-    port: 587, 
-    secure: false, // Use STARTTLS
+    port: 465, 
+    secure: true, // Use SSL/TLS to bypass cloud host port 587 blocks
     auth: {
-        // SendGrid requires the username 'apikey'
         user: 'apikey', 
-        // We use the environment variable for the API key
         pass: process.env.SENDGRID_API_KEY 
     }
 });
