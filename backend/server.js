@@ -15,8 +15,32 @@ mongoose.connect(process.env.MONGO_URI) // Options removed
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// Initial Test Route
-app.get('/api/ping', (req, res) => res.json({ msg: 'ok', uptime: process.uptime() }));
+// Health Check Routes for Uptime Monitoring Bots (UptimeRobot, Render, etc.)
+const getHealthStatus = (req, res) => {
+  const dbStateMap = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting'
+  };
+  const isHealthy = mongoose.connection.readyState === 1;
+  const status = isHealthy ? 'healthy' : 'degraded';
+  
+  res.status(isHealthy ? 200 : 503).json({
+    status,
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+    database: dbStateMap[mongoose.connection.readyState] || 'unknown'
+  });
+};
+
+// Root & Health Endpoints
+app.get('/', getHealthStatus);
+app.get('/health', getHealthStatus);
+app.get('/healthz', getHealthStatus);
+app.get('/ping', getHealthStatus);
+app.get('/api/ping', getHealthStatus);
+app.get('/api/health', getHealthStatus);
 
 // Import Routes
 const authRoutes = require('./src/routes/authRoutes');
