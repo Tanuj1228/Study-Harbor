@@ -1,0 +1,19 @@
+services:
+  # Backend Web Service
+  - type: web
+    name: study-harbor-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+
+  # Frontend Static Site
+  - type: static
+    name: study-harbor-frontend
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
