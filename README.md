@@ -1,5 +1,7 @@
 # Study Harbour ⚓
 
+**Live Demo:** [https://study-harbor-1.onrender.com](https://study-harbor-1.onrender.com)
+
 ## Overview
 Study Harbour is a centralized academic hub designed to help students organize their academic year. It resolves the problem of scattered academic resources by providing a unified platform where students can track calendar events, access drive resources categorized by year and subject, and view pinned alerts in real-time.
 
